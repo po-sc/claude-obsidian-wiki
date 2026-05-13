@@ -2,6 +2,11 @@
 
 Auto-updating knowledge base powered by Claude Code. Every significant task Claude completes is automatically written into your Obsidian vault — no reminders needed.
 
+> **Inspired by** Andrej Karpathy's Claude memory gist — this repo expands the idea into a full Obsidian-based wiki with structured project/topic pages, a session log, raw source storage, and lint tooling.
+> Original gist: <!-- ADD KARPATHY GIST URL HERE -->
+
+---
+
 ## What this is
 
 A global `CLAUDE.md` that teaches Claude Code to:
@@ -11,7 +16,9 @@ A global `CLAUDE.md` that teaches Claude Code to:
 - **Maintain a chronological log** of everything done
 - **Prevent broken links** — validates `[[links]]` before writing them
 
-## Setup
+---
+
+## Quick start — fresh install
 
 ### 1. Install Claude Code
 
@@ -19,30 +26,65 @@ A global `CLAUDE.md` that teaches Claude Code to:
 npm install -g @anthropic/claude-code
 ```
 
-### 2. Set up the vault
-
-Copy the `vault/` folder to wherever your Obsidian vault lives (or create a subfolder inside an existing vault):
+### 2. Clone this repo and run setup
 
 ```bash
-cp -r vault/ ~/Documents/MyVault/Claude/
+git clone https://github.com/po-sc/claude-obsidian-wiki
+cd claude-obsidian-wiki
+bash setup.sh
 ```
 
-Open `vault/index.md` and update `VAULT` path at the top to match where you put it.
+The script will ask where to put the vault, copy it there, install `~/.claude/CLAUDE.md`, and patch the vault path automatically.
 
-### 3. Install the global CLAUDE.md
+### 3. Done
 
+Start Claude Code in any project directory. It will read `index.md` at the start of each session and update the wiki after significant tasks — no commands needed.
+
+---
+
+## Adding to an existing Claude Code setup
+
+If you already use Claude Code and don't want to run the full setup:
+
+### Step 1 — Copy the vault template
+
+```bash
+# Pick any location inside or alongside your existing Obsidian vault
+VAULT="$HOME/Documents/MyVault/Claude"
+
+git clone https://github.com/po-sc/claude-obsidian-wiki /tmp/claude-wiki
+cp -r /tmp/claude-wiki/vault/. "$VAULT/"
+```
+
+### Step 2 — Update your existing `~/.claude/CLAUDE.md`
+
+**Option A — you don't have one yet:**
 ```bash
 mkdir -p ~/.claude
-cp claude/CLAUDE.md ~/.claude/CLAUDE.md
+cp /tmp/claude-wiki/claude/CLAUDE.md ~/.claude/CLAUDE.md
+# Then edit it: set VAULT path and add your projects at the bottom
 ```
 
-Then edit `~/.claude/CLAUDE.md` and update:
-- `VAULT` path to match where you put the vault in step 2
-- The `## Страницы проектов` section at the bottom with your own projects
+**Option B — you already have `~/.claude/CLAUDE.md`:**
 
-### 4. Done
+Append the wiki rules to your existing file:
+```bash
+echo "" >> ~/.claude/CLAUDE.md
+cat /tmp/claude-wiki/claude/CLAUDE.md >> ~/.claude/CLAUDE.md
+```
 
-Start Claude Code in any project. It will automatically read `index.md` at the start of each session and update the wiki after significant tasks.
+Then open `~/.claude/CLAUDE.md` and:
+1. Find the `VAULT=` line and set the correct path
+2. Remove any duplicate sections if you had overlapping rules
+3. Add your projects to the `## Project pages` section at the bottom
+
+### Step 3 — Tell Claude about the wiki in your first session
+
+On the first session after setup, say:
+
+> "Read index.md and initialize the wiki for project X"
+
+Claude will load the empty index, create the first project page, and from that point on updates happen automatically.
 
 ---
 
@@ -50,28 +92,28 @@ Start Claude Code in any project. It will automatically read `index.md` at the s
 
 ```
 vault/
-├── index.md          # Master index — read first every session
-├── log.md            # Chronological log of all sessions
-├── raw/              # Raw sources (Claude saves here automatically on Ingest)
+├── index.md          # Master index — Claude reads this first every session
+├── log.md            # Append-only session log
+├── raw/              # Raw sources (Claude saves here on every Ingest)
 │   └── README.md
 ├── projects/         # One page per project
-└── topics/           # One page per technology/pattern
+└── topics/           # One page per technology / pattern
 ```
 
 ### How it grows
 
-- `projects/<ProjectName>.md` — architecture, decisions, API, screens
+- `projects/<ProjectName>.md` — architecture, decisions, API, screens, history
 - `topics/<Technology>.md` — non-obvious behavior, patterns, gotchas
-- `log.md` — append-only record of what was done and when
+- `log.md` — append-only record: what was done, which pages changed, key facts
 
 ### Operations
 
-| Command | What happens |
+| Say this | What happens |
 |---|---|
-| Just work | Claude auto-updates wiki after significant tasks |
-| "Ingest this file/link/text" | Claude saves raw source → writes structured page → updates index |
-| "Query: how did we do X?" | Claude reads index → reads pages → answers with citations |
-| "Lint the wiki" | Claude finds broken links, orphans, contradictions → fixes |
+| *(just work normally)* | Claude auto-updates wiki after significant tasks |
+| "Ingest this file / link / text" | Claude saves raw → writes structured page → updates index |
+| "How did we do X?" / "Remind me of Y" | Claude reads relevant pages → answers with `[[citations]]` |
+| "Lint the wiki" | Claude finds broken links, orphans, stale facts → fixes them |
 
 ---
 
@@ -92,7 +134,9 @@ HTTP client for Flutter with interceptors and FormData support.
 → [[projects/MyApp]] — where we use it
 
 ## How we use it
+
 ## Non-obvious behavior
+
 ## Decisions and patterns
 ```
 
@@ -100,15 +144,15 @@ HTTP client for Flutter with interceptors and FormData support.
 
 ## Tips
 
-- **Don't fight the automation** — if Claude writes something wrong to the wiki, just correct it and Claude will learn from the correction
-- **`raw/` fills up over time** — it's intentional. These are your source documents for future re-ingestion
-- **Lint occasionally** — ask Claude to "lint the wiki" every few weeks to catch stale facts and broken links
-- **Cross-link liberally** — `[[topics/Foo]]` from any project page; Claude will create the page if it doesn't exist
+- **Don't fight the automation** — if Claude writes something wrong, correct it and it won't repeat
+- **`raw/` fills up over time** — intentional, these are your source-of-truth originals
+- **Lint occasionally** — "lint the wiki" every few weeks catches stale facts and broken links
+- **Cross-link liberally** — `[[topics/Foo]]` from any page; Claude creates the stub if it doesn't exist
 
 ---
 
 ## Requirements
 
 - Claude Code (any version)
-- Obsidian (optional — the vault is plain markdown, works without Obsidian)
+- Obsidian (optional — the vault is plain markdown, works without it)
 - macOS / Linux (paths use Unix conventions)
