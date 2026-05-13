@@ -41,8 +41,10 @@ This is not optional. This is not "when I have time". It is the last step of eve
 ## Start — beginning of each session (automatic)
 
 1. Read `index.md` — load general context
-2. If the working project is known → read its page in `projects/`
-3. Begin work with context already loaded
+2. If the working project is known → read **all** pages for that project:
+   - If it's a folder `projects/<Project>/` — read every `.md` file inside
+   - If it's a single file `projects/<Project>.md` — read that file
+3. Begin work with full context already loaded
 
 ---
 
