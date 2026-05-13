@@ -3,7 +3,7 @@
 Auto-updating knowledge base powered by Claude Code. Every significant task Claude completes is automatically written into your Obsidian vault — no reminders needed.
 
 > **Inspired by** Andrej Karpathy's Claude memory gist — this repo expands the idea into a full Obsidian-based wiki with structured project/topic pages, a session log, raw source storage, and lint tooling.
-> Original gist: <!-- ADD KARPATHY GIST URL HERE -->
+> Original gist: https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f
 
 ---
 
