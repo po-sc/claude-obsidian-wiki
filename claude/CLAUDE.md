@@ -41,10 +41,11 @@ This is not optional. This is not "when I have time". It is the last step of eve
 ## Start — beginning of each session (automatic)
 
 1. Read `index.md` — load general context
-2. If the working project is known → read **all** pages for that project:
-   - If it's a folder `projects/<Project>/` — read every `.md` file inside
+2. Determine the project from the **working directory** and read all its pages:
+   - Check the current directory path against the mapping in `## Project pages` below
+   - If it's a folder `projects/<Project>/` — read every `.md` file inside (most important first)
    - If it's a single file `projects/<Project>.md` — read that file
-3. Begin work with full context already loaded
+3. Begin work with full context already loaded — don't ask "what are we doing?", the context is already there
 
 ---
 
@@ -196,11 +197,18 @@ source_count: N
 
 ## Project pages
 
-Add your projects here as you create pages for them:
+Map your working directories to wiki pages. Claude uses this to know what to read at session start.
 
 ```
-projects/<ProjectName>    — description
+/path/to/my-project/    → projects/MyProject/  — all pages inside (BriefPage.md first)
+/path/to/other-thing/   → projects/OtherThing.md
+```
+
+Example:
+```
+~/Documents/my-app/           → projects/MyApp/MyApp.md, MyApp/Backend.md, MyApp/Frontend.md
+~/Documents/scripts/whisper/  → projects/Whisper.md
 ```
 
 When working on a project — update its page.
-When starting a new project — create `projects/<ProjectName>.md` + add to `index.md`.
+When starting a new project — create `projects/<Name>.md` + add to `index.md` + add the directory mapping here.
