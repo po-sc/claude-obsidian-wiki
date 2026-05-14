@@ -2,12 +2,10 @@
 
 ## Obsidian Wiki
 
-**Vault path — update this to match your setup:**
-
+**Vault path — update this after setup:**
 ```bash
 VAULT='/path/to/your/obsidian/vault/Claude'
 ```
-
 > Always use single quotes — the path may contain spaces.
 
 ---
@@ -16,36 +14,51 @@ VAULT='/path/to/your/obsidian/vault/Claude'
 
 **A task is not complete until the wiki is updated.**
 
-This is not optional. This is not "when I have time". It is the last step of every task.
-
-### What counts as a significant task (always update):
+### What counts as significant (always update):
 - Added/changed a screen, endpoint, or data model
 - Fixed an architectural bug or race condition
 - Made a decision about structure, pattern, or stack
 - Discovered non-obvious framework behavior
 - Created/changed an important file (config, script, CLAUDE.md)
 
-### What does NOT need a wiki update:
+### What does NOT need an update:
 - Typo / color / text fix
 - Discussion without a concrete outcome
-- Answering "how does X work" without code changes
+- Answering a question without changing code
 
-### Order after a significant task (always, in this order):
+### Order after a significant task:
 1. Update the project page in `projects/` — add facts, decisions, changes
 2. If worked with a technology non-trivially → create/update `topics/<tech>.md`
 3. If a new page was created → add to `index.md` immediately + update page count
-4. Append to `log.md` (format below)
+4. Append to `log.md`
 
 ---
 
 ## Start — beginning of each session (automatic)
 
-1. Read `index.md` — load general context
-2. Determine the project from the **working directory** and read all its pages:
-   - Check the current directory path against the mapping in `## Project pages` below
-   - If it's a folder `projects/<Project>/` — read every `.md` file inside (most important first)
-   - If it's a single file `projects/<Project>.md` — read that file
-3. Begin work with full context already loaded — don't ask "what are we doing?", the context is already there
+1. Read `index.md`
+2. Find the working directory in the **Project pages** table below → read all project pages in the listed order
+3. Begin work — don't ask "what are we doing?", context is already loaded
+
+---
+
+## Project pages
+
+Map your working directories to wiki pages. Claude reads this at session start to know what to load.
+
+| Working directory (partial match) | Wiki pages to read (in order) |
+|---|---|
+| `/path/to/my-project/` | `projects/MyProject/Overview.md`, `projects/MyProject/Backend.md` |
+| `/path/to/other/` | `projects/OtherProject.md` |
+
+**Reference — all wiki pages:**
+```
+projects/<ProjectName>/Overview.md   — architecture, stack, roles
+projects/<ProjectName>/Frontend.md   — screens, API calls, patterns
+projects/<ProjectName>/Backend.md    — endpoints, DB, security
+```
+
+When adding a new project: create wiki page(s) + add a row to the table above + add to `index.md`.
 
 ---
 
@@ -54,27 +67,14 @@ This is not optional. This is not "when I have time". It is the last step of eve
 **When:** user provides a file, link, or text to study.
 
 **Algorithm (strict order):**
-
-1. **Save the raw source to `raw/`** — FIRST step, before any processing:
-   - File at a path → copy it: `cp <path> "$VAULT/raw/YYYY-MM-DD-topic.ext"`
-   - Text / chat / paste → write it as `"$VAULT/raw/YYYY-MM-DD-topic.md"`
-   - Naming: `YYYY-MM-DD-<short-description>.<ext>`
-   - If source already exists in `raw/` — don't duplicate, update if needed
+1. **Save raw source to `raw/`** — FIRST, before any processing:
+   - File at path → `cp <path> "$VAULT/raw/YYYY-MM-DD-description.ext"`
+   - Text / chat / paste → write as `"$VAULT/raw/YYYY-MM-DD-description.md"`
+   - Don't duplicate if already in `raw/`
 2. Study the source fully
-3. Write/update the page in `projects/` or `topics/`
-4. Update `index.md` — add/refine the entry, update page count and date
+3. Write/update page in `projects/` or `topics/`
+4. Update `index.md` — entry + page count + date
 5. Append to `log.md`
-
-**log.md format:**
-```
-## [YYYY-MM-DD] ingest | <Title>
-**Source:** raw/<filename> or <url>
-**Pages:** [[page1]], [[page2]]
-**Key facts:**
-- <fact 1>
-- <fact 2>
-- <fact 3>
-```
 
 ---
 
@@ -97,24 +97,24 @@ Types: `ingest` · `fix` · `feature` · `lint` · `query` · `refactor`
 
 **When:** "how did we do X", "what do we know about Y", "remind me of Z's architecture".
 
-1. Read `index.md` → identify relevant pages
-2. Read relevant pages
+1. Read `index.md` → find relevant pages
+2. Read those pages
 3. Answer with `[[citations]]`
-4. If the answer is valuable and not yet documented → create a page
-5. Append to log.md (type `query`)
+4. If the answer revealed something new and valuable → update/create a page + append to log.md
+5. If just answering from already-documented info — no log entry needed
 
 ---
 
 ## Lint — wiki health check
 
-**When:** user asks "lint the wiki" / "check the wiki", or approximately every 20 sessions.
+**When:** "lint the wiki" / "check the wiki" / approximately every 20 sessions.
 
-**What to check:**
+**Check for:**
 - Contradictions between pages
 - Stale facts (old versions, removed features)
 - Orphan pages (no incoming links)
 - Broken links (`[[topics/]]` is broken; `[[topics/Foo]]` without `Foo.md` is broken)
-- Missing cross-references (A knows about B, B doesn't know about A)
+- Missing cross-references
 
 **Algorithm:** read all pages → list problems → fix → append to log.md (type `lint`).
 
@@ -122,7 +122,7 @@ Types: `ingest` · `fix` · `feature` · `lint` · `query` · `refactor`
 
 ## Topics — technology knowledge
 
-The `topics/` folder is about technologies, not projects. Grows organically.
+The `topics/` folder is about technologies, not projects.
 
 **Create when:**
 - Non-obvious framework behavior
@@ -140,14 +140,12 @@ source_count: N
 
 # <Technology>
 
-Short description — what it is and how we use it.
+Short description.
 
 → [[projects/...]] — where we use it
 
 ## How we use it
-
 ## Non-obvious behavior
-
 ## Decisions and patterns
 ```
 
@@ -155,7 +153,6 @@ Short description — what it is and how we use it.
 
 ## Project page format
 
-### YAML frontmatter (required)
 ```yaml
 ---
 tags: [<project>, <tech>, ...]
@@ -165,12 +162,7 @@ source_count: N
 ---
 ```
 
-### Structure
-- **Title** = project name
-- Short description (1–2 sentences)
-- Links: `→ [[Related Page]]`
-- `## Decisions` — architectural decisions with date and rationale
-- `## Changelog` — key changes by date
+Structure: title → description → `→ [[links]]` → content → `## Decisions` → `## Changelog`
 
 ---
 
@@ -178,37 +170,15 @@ source_count: N
 
 - Claude **saves** raw sources to `raw/` on every Ingest (step 1)
 - Claude **reads** `raw/` when needed
-- Claude **never modifies** files already there (only adds new ones)
+- Claude **never modifies** files already there
 - Naming: `YYYY-MM-DD-short-description.ext`
 
 ---
 
-## Rules for [[links]] — preventing broken links
+## Rules for [[links]]
 
-**Before writing any `[[link]]`:**
-
-1. The file must exist — verify before writing
+1. File must exist before writing the link
 2. `[[topics/Foo]]` → file `topics/Foo.md` must exist
-3. `[[topics/]]` — **FORBIDDEN** (folder link is invalid in Obsidian)
+3. `[[topics/]]` — **FORBIDDEN** (folder reference is invalid in Obsidian)
 4. If topic doesn't exist → create a stub immediately OR write plain text without `[[]]`
 5. When creating a new page → add it to `index.md` immediately
-
----
-
-## Project pages
-
-Map your working directories to wiki pages. Claude uses this to know what to read at session start.
-
-```
-/path/to/my-project/    → projects/MyProject/  — all pages inside (BriefPage.md first)
-/path/to/other-thing/   → projects/OtherThing.md
-```
-
-Example:
-```
-~/Documents/my-app/           → projects/MyApp/MyApp.md, MyApp/Backend.md, MyApp/Frontend.md
-~/Documents/scripts/whisper/  → projects/Whisper.md
-```
-
-When working on a project — update its page.
-When starting a new project — create `projects/<Name>.md` + add to `index.md` + add the directory mapping here.

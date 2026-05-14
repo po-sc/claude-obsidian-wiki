@@ -11,6 +11,7 @@ Auto-updating knowledge base powered by Claude Code. Every significant task Clau
 
 A global `CLAUDE.md` that teaches Claude Code to:
 - **Auto-update** your Obsidian wiki after every meaningful task (without being asked)
+- **Know what to read** at session start based on the working directory
 - **Save raw sources** to `raw/` before processing them
 - **Create topic pages** when working with a technology non-trivially
 - **Maintain a chronological log** of everything done
@@ -34,57 +35,63 @@ cd claude-obsidian-wiki
 bash setup.sh
 ```
 
-The script will ask where to put the vault, copy it there, install `~/.claude/CLAUDE.md`, and patch the vault path automatically.
+The script will:
+- Ask where to put the vault and copy it there
+- Install `~/.claude/CLAUDE.md` and patch the vault path automatically
 
-### 3. Done
+### 3. Map your projects
 
-Start Claude Code in any project directory. It will read `index.md` at the start of each session and update the wiki after significant tasks — no commands needed.
+Open `~/.claude/CLAUDE.md` and fill in the **Project pages** table:
+
+```
+| Working directory (partial match) | Wiki pages to read (in order) |
+|---|---|
+| /Users/me/my-app/                 | projects/MyApp/Overview.md, projects/MyApp/Backend.md |
+| /Users/me/scripts/whisper/        | projects/Whisper.md |
+```
+
+This is what lets Claude know which wiki pages to load when you open a project.
+
+### 4. First session
+
+Start Claude Code inside any mapped project directory. It will automatically read the wiki and begin with full context — no commands needed.
 
 ---
 
 ## Adding to an existing Claude Code setup
 
-If you already use Claude Code and don't want to run the full setup:
+If you already use Claude Code and have a `~/.claude/CLAUDE.md`:
 
 ### Step 1 — Copy the vault template
 
 ```bash
-# Pick any location inside or alongside your existing Obsidian vault
-VAULT="$HOME/Documents/MyVault/Claude"
+VAULT="$HOME/Documents/MyVault/Claude"   # change this
 
 git clone https://github.com/po-sc/claude-obsidian-wiki /tmp/claude-wiki
 cp -r /tmp/claude-wiki/vault/. "$VAULT/"
 ```
 
-### Step 2 — Update your existing `~/.claude/CLAUDE.md`
+### Step 2 — Merge CLAUDE.md manually
 
-**Option A — you don't have one yet:**
+**Don't blindly append** — it will duplicate sections. Instead, open both files and copy the sections you want:
+
 ```bash
-mkdir -p ~/.claude
-cp /tmp/claude-wiki/claude/CLAUDE.md ~/.claude/CLAUDE.md
-# Then edit it: set VAULT path and add your projects at the bottom
+open ~/.claude/CLAUDE.md
+open /tmp/claude-wiki/claude/CLAUDE.md
 ```
 
-**Option B — you already have `~/.claude/CLAUDE.md`:**
+Copy these sections into your existing file:
+- `## HARD RULE` — the auto-update rule
+- `## Start` — the session start behavior  
+- `## Project pages` — the directory→wiki mapping table (fill in your own projects)
+- `## Ingest / Query / Lint` — the wiki operations
+- `## raw/ — rules` and `## Rules for [[links]]`
 
-Append the wiki rules to your existing file:
-```bash
-echo "" >> ~/.claude/CLAUDE.md
-cat /tmp/claude-wiki/claude/CLAUDE.md >> ~/.claude/CLAUDE.md
-```
+Then set the `VAULT=` path at the top.
 
-Then open `~/.claude/CLAUDE.md` and:
-1. Find the `VAULT=` line and set the correct path
-2. Remove any duplicate sections if you had overlapping rules
-3. Add your projects to the `## Project pages` section at the bottom
+### Step 3 — Done
 
-### Step 3 — Tell Claude about the wiki in your first session
-
-On the first session after setup, say:
-
-> "Read index.md and initialize the wiki for project X"
-
-Claude will load the empty index, create the first project page, and from that point on updates happen automatically.
+Claude will now auto-update the wiki after significant tasks. The first session in each project directory will automatically load the right wiki pages.
 
 ---
 
@@ -96,15 +103,15 @@ vault/
 ├── log.md            # Append-only session log
 ├── raw/              # Raw sources (Claude saves here on every Ingest)
 │   └── README.md
-├── projects/         # One page per project
+├── projects/         # One page per project (or a folder with multiple pages)
 └── topics/           # One page per technology / pattern
 ```
 
 ### How it grows
 
-- `projects/<ProjectName>.md` — architecture, decisions, API, screens, history
+- `projects/<Name>.md` or `projects/<Name>/` — architecture, decisions, API, history
 - `topics/<Technology>.md` — non-obvious behavior, patterns, gotchas
-- `log.md` — append-only record: what was done, which pages changed, key facts
+- `log.md` — append-only: what changed, which pages updated, key facts
 
 ### Operations
 
@@ -117,28 +124,23 @@ vault/
 
 ---
 
-## Example wiki page (topic)
+## Example project with multiple wiki pages
 
-```markdown
----
-tags: [flutter, dio, http]
-date: 2026-01-01
-updated: 2026-01-01
-source_count: 1
----
+For a project with backend + frontend, create a folder:
 
-# Dio — Flutter HTTP Client
-
-HTTP client for Flutter with interceptors and FormData support.
-
-→ [[projects/MyApp]] — where we use it
-
-## How we use it
-
-## Non-obvious behavior
-
-## Decisions and patterns
 ```
+projects/MyApp/
+├── Overview.md     ← start here (architecture, roles, stack)
+├── Frontend.md     ← screens, routing, API calls
+└── Backend.md      ← endpoints, DB schema, auth
+```
+
+Then in `## Project pages`:
+```
+| /Users/me/my-app/ | projects/MyApp/Overview.md, projects/MyApp/Frontend.md, projects/MyApp/Backend.md |
+```
+
+Claude reads them in that order at session start.
 
 ---
 
@@ -147,7 +149,7 @@ HTTP client for Flutter with interceptors and FormData support.
 - **Don't fight the automation** — if Claude writes something wrong, correct it and it won't repeat
 - **`raw/` fills up over time** — intentional, these are your source-of-truth originals
 - **Lint occasionally** — "lint the wiki" every few weeks catches stale facts and broken links
-- **Cross-link liberally** — `[[topics/Foo]]` from any page; Claude creates the stub if it doesn't exist
+- **Cross-link liberally** — `[[topics/Foo]]` from any page; Claude creates the stub if missing
 
 ---
 
