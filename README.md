@@ -1,33 +1,108 @@
 # Claude × Obsidian Wiki
 
-Auto-updating knowledge base powered by Claude Code. Every significant task Claude completes is automatically written into your Obsidian vault — no reminders needed.
+> A global `CLAUDE.md` that gives Claude Code a persistent memory — automatically maintained, zero effort on your part.
 
-> **Inspired by** Andrej Karpathy's Claude memory gist — this repo expands the idea into a full Obsidian-based wiki with structured project/topic pages, a session log, raw source storage, and lint tooling.
-> Original gist: https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f
-
----
-
-## What this is
-
-A global `CLAUDE.md` that teaches Claude Code to:
-- **Auto-update** your Obsidian wiki after every meaningful task (without being asked)
-- **Know what to read** at session start based on the working directory
-- **Save raw sources** to `raw/` before processing them
-- **Create topic pages** when working with a technology non-trivially
-- **Maintain a chronological log** of everything done
-- **Prevent broken links** — validates `[[links]]` before writing them
+**Inspired by** Andrej Karpathy's Claude memory gist:
+https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f
 
 ---
 
-## Quick start — fresh install
+## The problem
 
-### 1. Install Claude Code
+Claude Code is incredibly capable — but it starts every session from zero. It doesn't remember what you built last week, why you made a particular architectural decision, or that you already spent two hours debugging that exact issue. You end up re-explaining your project from scratch, and Claude re-discovers the same things over and over.
 
-```bash
-npm install -g @anthropic/claude-code
+The usual workaround is to dump context into the prompt manually. That's tedious, easy to forget, and doesn't scale.
+
+## The solution
+
+This repo gives Claude Code a **persistent wiki** — a structured Obsidian vault that Claude reads at the start of every session and updates automatically after every meaningful task.
+
+You don't maintain it. Claude does.
+
+After a week of working together, your wiki looks like this:
+
+```
+projects/
+  MyApp/
+    Overview.md      ← architecture, roles, stack decisions
+    Frontend.md      ← every screen, every API call, patterns used
+    Backend.md       ← endpoints, DB schema, auth, known issues
+
+topics/
+  Dio.md             ← non-obvious behavior of your HTTP client
+  Spring Boot.md     ← CORS gotchas, transaction patterns
+  python-docx.md     ← how you generate Word docs, the patching trick
+
+log.md               ← chronological record of everything done
+raw/                 ← original sources Claude ingested
 ```
 
-### 2. Clone this repo and run setup
+Every page written by Claude, from your actual work. No copy-paste, no manual documentation.
+
+---
+
+## What Claude does automatically
+
+**At the start of every session** — reads `index.md` and all pages for your current project (detected from the working directory). Begins with full context, never asks "remind me what we're building".
+
+**After every significant task** — updates the relevant project page, creates a topic page if you used a technology non-trivially, appends to `log.md`. All without being asked.
+
+**When you give it a source** ("ingest this file / link / doc") — saves the raw source to `raw/`, writes a structured wiki page, updates the index.
+
+**When you ask a question** ("how did we handle auth?", "what was the decision on X?") — reads the wiki, answers with citations like `[[Flutter.md]]`, and documents new findings if any.
+
+**Occasionally** ("lint the wiki") — finds broken links, orphan pages, stale facts, missing cross-references, and fixes them.
+
+---
+
+## Real example
+
+Here's what happens when you open a project:
+
+```
+You:    [opens Claude Code in ~/my-project/]
+
+Claude: [reads index.md → reads MyApp/Overview.md, MyApp/Frontend.md, 
+         MyApp/Backend.md automatically]
+        
+        Ready. We're working on MyApp — Flutter frontend + Spring Boot backend.
+        Last session: fixed the CORS issue in SecurityConfig and added 
+        conflict detection for bookings (HTTP 409). Open tasks: payment 
+        integration is still a stub.
+        
+        What are we doing today?
+```
+
+Then after you work together for an hour:
+
+```
+Claude: [updates MyApp/Backend.md with the new endpoint]
+        [creates topics/WebSocket.md because you set up STOMP for the first time]
+        [appends to log.md:
+          ## [2026-05-15] feature | WebSocket chat on bookings
+          **Pages:** [[MyApp/Backend]], [[topics/WebSocket]]
+          **Key facts:**
+          - STOMP over WebSocket, endpoint /ws
+          - Group thread per booking: client + engineer + owner
+          - Reconnect logic in Flutter: exponential backoff, max 5 attempts
+        ]
+```
+
+---
+
+## Setup
+
+### Option 1 — Ask Claude Code to do it for you
+
+Open Claude Code in any directory and say:
+
+> "Set up the Obsidian wiki integration from https://github.com/po-sc/claude-obsidian-wiki — clone it, run setup, and help me configure the project mapping for this project"
+
+Claude will handle the rest: clone the repo, run `setup.sh`, ask where your vault is, and help you fill in the project table.
+
+### Option 2 — Run setup yourself
+
+**Prerequisites:** Claude Code installed (`npm install -g @anthropic/claude-code`)
 
 ```bash
 git clone https://github.com/po-sc/claude-obsidian-wiki
@@ -35,63 +110,36 @@ cd claude-obsidian-wiki
 bash setup.sh
 ```
 
-The script will:
-- Ask where to put the vault and copy it there
-- Install `~/.claude/CLAUDE.md` and patch the vault path automatically
+The script asks where to put the vault, copies it there, installs `~/.claude/CLAUDE.md`, and patches the vault path.
 
-### 3. Map your projects
-
-Open `~/.claude/CLAUDE.md` and fill in the **Project pages** table:
-
-```
-| Working directory (partial match) | Wiki pages to read (in order) |
-|---|---|
-| /Users/me/my-app/                 | projects/MyApp/Overview.md, projects/MyApp/Backend.md |
-| /Users/me/scripts/whisper/        | projects/Whisper.md |
-```
-
-This is what lets Claude know which wiki pages to load when you open a project.
-
-### 4. First session
-
-Start Claude Code inside any mapped project directory. It will automatically read the wiki and begin with full context — no commands needed.
-
----
-
-## Adding to an existing Claude Code setup
-
-If you already use Claude Code and have a `~/.claude/CLAUDE.md`:
-
-### Step 1 — Copy the vault template
+### Option 3 — Already have Claude Code set up?
 
 ```bash
-VAULT="$HOME/Documents/MyVault/Claude"   # change this
+VAULT="$HOME/Documents/MyVault/Claude"
 
 git clone https://github.com/po-sc/claude-obsidian-wiki /tmp/claude-wiki
 cp -r /tmp/claude-wiki/vault/. "$VAULT/"
 ```
 
-### Step 2 — Merge CLAUDE.md manually
-
-**Don't blindly append** — it will duplicate sections. Instead, open both files and copy the sections you want:
+Then open both files side by side and merge the sections you want into your existing `~/.claude/CLAUDE.md`:
 
 ```bash
 open ~/.claude/CLAUDE.md
 open /tmp/claude-wiki/claude/CLAUDE.md
 ```
 
-Copy these sections into your existing file:
-- `## HARD RULE` — the auto-update rule
-- `## Start` — the session start behavior  
-- `## Project pages` — the directory→wiki mapping table (fill in your own projects)
-- `## Ingest / Query / Lint` — the wiki operations
-- `## raw/ — rules` and `## Rules for [[links]]`
+### After setup — one required step
 
-Then set the `VAULT=` path at the top.
+Open `~/.claude/CLAUDE.md` and fill in the **Project pages** table. This is what tells Claude which wiki pages to load when you open a project:
 
-### Step 3 — Done
+```
+| Working directory       | Wiki pages to read (in order)                        |
+|-------------------------|------------------------------------------------------|
+| /Users/me/my-app/       | projects/MyApp/Overview.md, projects/MyApp/Backend.md|
+| /Users/me/scripts/      | projects/Scripts.md                                  |
+```
 
-Claude will now auto-update the wiki after significant tasks. The first session in each project directory will automatically load the right wiki pages.
+Without this table, Claude won't know which project you're in. Takes 2 minutes.
 
 ---
 
@@ -99,62 +147,57 @@ Claude will now auto-update the wiki after significant tasks. The first session 
 
 ```
 vault/
-├── index.md          # Master index — Claude reads this first every session
-├── log.md            # Append-only session log
-├── raw/              # Raw sources (Claude saves here on every Ingest)
-│   └── README.md
-├── projects/         # One page per project (or a folder with multiple pages)
-└── topics/           # One page per technology / pattern
+├── index.md          ← master index, read first every session
+├── log.md            ← append-only chronological log
+├── raw/              ← original sources Claude ingested (never edited)
+├── projects/         ← one page or folder per project
+└── topics/           ← one page per technology / pattern
 ```
 
-### How it grows
-
-- `projects/<Name>.md` or `projects/<Name>/` — architecture, decisions, API, history
-- `topics/<Technology>.md` — non-obvious behavior, patterns, gotchas
-- `log.md` — append-only: what changed, which pages updated, key facts
-
-### Operations
-
-| Say this | What happens |
-|---|---|
-| *(just work normally)* | Claude auto-updates wiki after significant tasks |
-| "Ingest this file / link / text" | Claude saves raw → writes structured page → updates index |
-| "How did we do X?" / "Remind me of Y" | Claude reads relevant pages → answers with `[[citations]]` |
-| "Lint the wiki" | Claude finds broken links, orphans, stale facts → fixes them |
-
----
-
-## Example project with multiple wiki pages
-
-For a project with backend + frontend, create a folder:
+Projects with multiple pages use a folder:
 
 ```
 projects/MyApp/
-├── Overview.md     ← start here (architecture, roles, stack)
+├── Overview.md     ← read first (architecture, roles, key decisions)
 ├── Frontend.md     ← screens, routing, API calls
-└── Backend.md      ← endpoints, DB schema, auth
+└── Backend.md      ← endpoints, DB schema, security
 ```
 
-Then in `## Project pages`:
-```
-| /Users/me/my-app/ | projects/MyApp/Overview.md, projects/MyApp/Frontend.md, projects/MyApp/Backend.md |
-```
+Single-file projects just use `projects/ProjectName.md`.
 
-Claude reads them in that order at session start.
+---
+
+## How to use it day-to-day
+
+**Just work normally.** Claude handles the wiki.
+
+A few phrases worth knowing:
+
+| Say this | What happens |
+|---|---|
+| "Ingest this" + file/link/text | Claude saves raw → writes structured wiki page → updates index |
+| "How did we handle X?" | Claude reads wiki → answers with page citations |
+| "Remind me of the architecture" | Claude reads all project pages → gives full summary |
+| "Lint the wiki" | Claude audits all pages → fixes broken links, stale facts, orphans |
 
 ---
 
 ## Tips
 
-- **Don't fight the automation** — if Claude writes something wrong, correct it and it won't repeat
-- **`raw/` fills up over time** — intentional, these are your source-of-truth originals
-- **Lint occasionally** — "lint the wiki" every few weeks catches stale facts and broken links
-- **Cross-link liberally** — `[[topics/Foo]]` from any page; Claude creates the stub if missing
+**Don't fight the automation.** If Claude writes something wrong to the wiki, just correct it and say why. It will update the page and won't make the same mistake again.
+
+**The `raw/` folder fills up over time.** That's intentional — these are your source-of-truth originals. If you ever re-process a document, the raw version is there.
+
+**Works without Obsidian.** The vault is plain markdown. Any editor works. Obsidian just gives you a nice graph view and backlink navigation.
+
+**Lint occasionally.** Once every few weeks, say "lint the wiki" — Claude will find pages that reference removed features, broken `[[links]]`, and pages no one links to anymore.
+
+**The log is searchable.** `log.md` has a consistent format: `## [YYYY-MM-DD] type | title`. After a month, it becomes a useful record of what was actually built and when.
 
 ---
 
 ## Requirements
 
-- Claude Code (any version)
-- Obsidian (optional — the vault is plain markdown, works without it)
-- macOS / Linux (paths use Unix conventions)
+- Claude Code (any version) — https://claude.ai/code
+- macOS or Linux (paths use Unix conventions)
+- Obsidian (optional) — https://obsidian.md
