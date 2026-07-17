@@ -67,10 +67,14 @@ When adding a new project: create wiki page(s) + add a row to the table above + 
 **When:** user provides a file, link, or text to study.
 
 **Algorithm (strict order):**
-1. **Save raw source to `raw/`** — FIRST, before any processing:
-   - File at path → `cp <path> "$VAULT/raw/YYYY-MM-DD-description.ext"`
-   - Text / chat / paste → write as `"$VAULT/raw/YYYY-MM-DD-description.md"`
-   - Don't duplicate if already in `raw/`
+1. **Create a source note in `raw/`** — FIRST, before any processing.
+   `raw/` is Claude's **extra memory about sources**, not a dump of copies:
+   - Name: `raw/YYYY-MM-DD-short-description.md`
+   - Header:
+     - `**Source:**` — absolute path to the file on disk (do NOT copy binaries / PDFs / large files — reference the path); if it's a link, the URL. A small text paste / chat can be included inline.
+     - `**Project:**` — `[[projects/...]]`, which project it belongs to
+   - Body: a **detailed extract of everything useful** from the source — facts, numbers, requirements, decisions, wording. Enough to answer questions later without reopening the original. Not a one-line "what is this file".
+   - If a note already exists — extend it, don't duplicate
 2. Study the source fully
 3. Write/update page in `projects/` or `topics/`
 4. Update `index.md` — entry + page count + date
@@ -168,10 +172,15 @@ Structure: title → description → `→ [[links]]` → content → `## Decisio
 
 ## raw/ — rules
 
-- Claude **saves** raw sources to `raw/` on every Ingest (step 1)
-- Claude **reads** `raw/` when needed
-- Claude **never modifies** files already there
-- Naming: `YYYY-MM-DD-short-description.ext`
+`raw/` is Claude's **extra memory about studied sources**, not a folder of copies.
+
+- On every Ingest, Claude writes a note `raw/YYYY-MM-DD-description.md`:
+  - `**Source:**` — path to the file on disk (for binaries / PDFs — path only, no copy) or a URL
+  - `**Project:**` — `[[projects/...]]`, what it relates to
+  - below — a **detailed extract of everything useful** (so the original never needs re-reading)
+- Claude **reads** `raw/` to recall a source's contents
+- Claude **extends** old notes, never rewrites them without reason
+- Naming: `YYYY-MM-DD-short-description.md`
 
 ---
 

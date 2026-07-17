@@ -19,6 +19,11 @@ This repo gives Claude Code a **persistent wiki** — a structured Obsidian vaul
 
 You don't maintain it. Claude does.
 
+It ships in **two modes, chosen at setup**:
+
+- **Wiki only** — the curated knowledge base. Claude writes structured pages when something significant happens. Zero background processes.
+- **Wiki + Session Memory** — adds a local, free, zero-token safety net (`mem-sync`) that captures *every* Claude Code session into the vault automatically, so nothing is ever lost — even the sessions Claude didn't think were worth a page. macOS only. See [Session Memory](#session-memory-optional).
+
 After a week of working together, your wiki looks like this:
 
 ```
@@ -47,7 +52,7 @@ Every page written by Claude, from your actual work. No copy-paste, no manual do
 
 **After every significant task** — updates the relevant project page, creates a topic page if you used a technology non-trivially, appends to `log.md`. All without being asked.
 
-**When you give it a source** ("ingest this file / link / doc") — saves the raw source to `raw/`, writes a structured wiki page, updates the index.
+**When you give it a source** ("ingest this file / link / doc") — writes a structured **source note** to `raw/` (a detailed knowledge extract + the original's path or URL — binaries and PDFs are referenced, not copied), then writes a wiki page and updates the index.
 
 **When you ask a question** ("how did we handle auth?", "what was the decision on X?") — reads the wiki, answers with citations like `[[Flutter.md]]`, and documents new findings if any.
 
@@ -110,7 +115,7 @@ cd claude-obsidian-wiki
 bash setup.sh
 ```
 
-The script asks where to put the vault, copies it there, installs `~/.claude/CLAUDE.md`, and patches the vault path.
+The script asks where to put the vault, copies it there, installs `~/.claude/CLAUDE.md`, patches the vault path, and then asks whether to enable **Session Memory** (the optional mem-sync module). Answer `N` for wiki only, `y` to also install the background capture agent.
 
 ### Option 3 — Already have Claude Code set up?
 
@@ -149,7 +154,7 @@ Without this table, Claude won't know which project you're in. Takes 2 minutes.
 vault/
 ├── index.md          ← master index, read first every session
 ├── log.md            ← append-only chronological log
-├── raw/              ← original sources Claude ingested (never edited)
+├── raw/              ← source notes: Claude's memory of what it studied (path/URL + extract)
 ├── projects/         ← one page or folder per project
 └── topics/           ← one page per technology / pattern
 ```
@@ -164,6 +169,34 @@ projects/MyApp/
 ```
 
 Single-file projects just use `projects/ProjectName.md`.
+
+---
+
+## Session Memory (optional)
+
+The wiki above is *curated* — Claude writes pages when something matters. The
+optional **Session Memory** module is the *safety net*: it captures **every**
+Claude Code session automatically, so nothing is ever lost.
+
+It's a small Python script (`memory/mem-sync.py`) run by a macOS `launchd`
+agent. It parses Claude Code's own transcripts (`~/.claude/projects/**/*.jsonl`
+— written whether you use the terminal, the desktop app, or an IDE extension)
+and, per project, writes one aggregated file to your vault:
+
+```
+projects/<Project>/Session Log.md   ← every session: requests, files, commands, outcome
+```
+
+Your hand-written pages are never touched — only `Session Log.md` is generated.
+No LLM, no API key, **0 tokens** — pure deterministic parsing. If the
+third-party [`claude-mem`](https://github.com/thedotmack/claude-mem) plugin is
+installed, mem-sync also feeds its DB so its viewer and MCP search work.
+
+**Requirements:** macOS + python3 + local Claude Code. Not for the claude.ai web
+app or the Claude mobile chat app (those don't write local transcripts).
+
+Enable it during `setup.sh`, or install it later — see [`memory/README.md`](memory/README.md)
+for manual install, configuration, and uninstall.
 
 ---
 
@@ -186,7 +219,7 @@ A few phrases worth knowing:
 
 **Don't fight the automation.** If Claude writes something wrong to the wiki, just correct it and say why. It will update the page and won't make the same mistake again.
 
-**The `raw/` folder fills up over time.** That's intentional — these are your source-of-truth originals. If you ever re-process a document, the raw version is there.
+**The `raw/` folder fills up over time.** That's intentional — each note is Claude's memory of a source it studied (a knowledge extract plus the original's path or URL). When you re-process a topic, Claude reads the note instead of re-opening the original.
 
 **Works without Obsidian.** The vault is plain markdown. Any editor works. Obsidian just gives you a nice graph view and backlink navigation.
 
